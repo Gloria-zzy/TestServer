@@ -12,26 +12,24 @@
 	{
 		if (action.equals("send_pass"))
 		{
+
 			String phone = request.getParameter("phone");
 			DBAccess dba = new DBAccess();
-			if (dba.userExist(phone))
+
+			try
 			{
-				try
-				{
-					Sms sms = new Sms(phone);
-					dba.addCode(MD5Tool.md5(phone), sms.getCode());
-					out.print("{\"status\":1}");
-				} catch (Exception e)
-				{
-					out.print("{\"status\":0}");
-				}
-			} else
+				Sms sms = new Sms(phone);
+				dba.addCode(MD5Tool.md5(phone), sms.getCode());
+				out.print("{\"status\":1}");
+			} catch (Exception e)
 			{
 				out.print("{\"status\":0}");
 			}
 
 		} else if (action.equals("login"))
 		{
+			// if user exist, just judge the code
+			// if user doesn't exist, first register,  
 			String phone_md5 = request.getParameter("phone_md5");
 			String code_rec = request.getParameter("key_code");
 			String phone = request.getParameter("phone");
@@ -39,16 +37,28 @@
 			DBAccess dba = new DBAccess();
 			String code = dba.getCode(phone_md5);
 
-			if (code_rec.equals(code))
+			if (dba.userExist(phone))
 			{
-				out.print(
-						"{\"status\":1,\"token\":" + phone + "}");
-				//"{\"status\":1,\"token\":\"" + phone + "\"}");
+				if (code_rec.equals(code))
+				{
+					out.print("{\"status\":1,\"token\":" + phone + "}");
+					//"{\"status\":1,\"token\":\"" + phone + "\"}");
+				} else
+				{
+					out.print("{\"status\":0,\"token\":\"\"}");
+				}
 			} else
 			{
-				out.print(
-						"{\"status\":0,\"token\":\"\"}");
+				if (code_rec.equals(code))
+				{
+					out.print("{\"status\":1,\"token\":" + phone + "}");
+					//"{\"status\":1,\"token\":\"" + phone + "\"}");
+				} else
+				{
+					out.print("{\"status\":0,\"token\":\"\"}");
+				}
 			}
+
 		} else if (action.equals("upload_contacts"))
 		{
 			out.print("{\"status\":1}");
@@ -97,12 +107,10 @@
 			if (dba.regist(username, password, phone, email, address))
 			{
 				// if automatically login after register, token is needed 
-				out.print(
-						"{\"status\":1,\"token\":" + phone + "}");
+				out.print("{\"status\":1,\"token\":" + phone + "}");
 			} else
 			{
-				out.print(
-						"{\"status\":0,\"token\":\"\"}");
+				out.print("{\"status\":0,\"token\":\"\"}");
 			}
 		} else if (action.equals("upload_token"))
 		{
