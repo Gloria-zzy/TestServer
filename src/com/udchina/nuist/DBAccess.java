@@ -15,8 +15,68 @@ public class DBAccess
 	// 数据库帐号
 	static final String user = "root";
 	static final String pass = "charles";
+	
+	public boolean userExist(String phone){
+		System.out.println("phone or token: " + phone);
+		String _phone = "'" + phone + "'";
+		ResultSet rs = null;
+		String sql = "select * from regist_info where phone = " + _phone;
+		
+		Connection conn = null;
+		Statement stmt = null;
+		try
+		{
+			// register jdbc driver
+			Class.forName(jdbc_dirver);
+			
+			// open a connection
+			System.out.println("Connection to database...");
+			conn = DriverManager.getConnection(db_url, user, pass);
+			
+			// execute a query
+			System.out.println("Creating statement");
+			stmt = conn.createStatement();
+			
+			rs = stmt.executeQuery(sql);
+			
+			if (rs.next()) {
+				rs.close();
+				conn.close();
+				stmt.close();
+				return true;
+			} else {
+				rs.close();
+				conn.close();
+				stmt.close();
+				return false;
+			}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+		
+	}
 
-	// 添加记录
+	// add to regist_info
+	public boolean regist(String username, String password, String phone,
+			String email, String address)
+	{
+		String _username = "'" + username + "'";
+		String _password = "'" + password + "'";
+		String _phone = "'" + phone + "'";
+		String _email = "'" + email + "'";
+		String _address = "'" + address + "'";
+
+		String sql = "insert into regist_info values(" + _username + ","
+				+ _password + "," + _phone + "," + _email + "," + _address
+				+ ")";
+
+		return DoSQL_ins(sql);
+
+	}
+
+	// add to users
 	public boolean addCode(String phone_md5, String code)
 	{
 		String _phone_md5 = "'" + phone_md5 + "'";
@@ -27,18 +87,11 @@ public class DBAccess
 		if (DoSQL("select phone_md5, code from users where phone_md5 = "
 				+ _phone_md5, "select") != null)
 		{
-			sql = "update users set code = " + _code + " where phone_md5 = " + _phone_md5;
+			sql = "update users set code = " + _code + " where phone_md5 = "
+					+ _phone_md5;
 		}
 
-		try
-		{
-			DoSQL(sql, "insert");
-		} catch (Exception e)
-		{
-			return false;
-		}
-
-		return true;
+		return DoSQL_ins(sql);
 	}
 
 	public String getCode(String phone_md5)
@@ -51,7 +104,41 @@ public class DBAccess
 				"phone_md5: " + pc.getPhoneMD5() + "\ncode: " + pc.getCode());
 		return pc.getCode();
 	}
+	
+	// return boolean, execute insert or update
+	public boolean DoSQL_ins(String sql)
+	{
+		boolean rs = false;
+		Connection conn = null;
+		Statement stmt = null;
+		try
+		{
+			// register jdbc driver
+			Class.forName(jdbc_dirver);
+			
+			// open a connection
+			System.out.println("Connection to database...");
+			conn = DriverManager.getConnection(db_url, user, pass);
 
+			// execute a query
+			System.out.println("Creating statement");
+			stmt = conn.createStatement();
+			
+			rs = stmt.execute(sql);
+			
+			stmt.close();
+			conn.close();
+			
+			return true;
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	
+	// execute phone or code orperations
 	private PC DoSQL(String sql, String notice)
 	{
 		PC pc = null;
@@ -147,6 +234,7 @@ public class DBAccess
 
 	class PC
 	{
+		private String phone;
 		private String phone_md5;
 		private String code;
 
@@ -159,7 +247,17 @@ public class DBAccess
 			phone_md5 = p;
 			code = c;
 		}
-
+		
+		public void setPhone_md5(String phone_md5)
+		{
+			this.phone_md5 = phone_md5;
+		}
+		
+		public void setCode(String code)
+		{
+			this.code = code;
+		}
+		
 		public String getCode()
 		{
 			return code;
@@ -168,6 +266,16 @@ public class DBAccess
 		public String getPhoneMD5()
 		{
 			return phone_md5;
+		}
+		
+		public String getPhone()
+		{
+			return phone;
+		}
+		
+		public void setPhone(String phone)
+		{
+			this.phone = phone;
 		}
 	}
 }
