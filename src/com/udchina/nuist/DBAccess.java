@@ -10,11 +10,15 @@ public class DBAccess
 {
 	// 连接数据库
 	static final String jdbc_dirver = "com.mysql.jdbc.Driver";
-	static final String db_url = "jdbc:mysql://localhost/phone_code";
+	static final String db_url = "jdbc:mysql://101.132.190.102:3306/phone_code";
 
 	// 数据库帐号
 	static final String user = "root";
 	static final String pass = "charles";
+	
+	public void saveAddress(){
+		
+	}
 	
 	public boolean userExist(String phone){
 		System.out.println("phone or token: " + phone);

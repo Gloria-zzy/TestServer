@@ -62,6 +62,12 @@
 		} else if (action.equals("upload_contacts"))
 		{
 			out.print("{\"status\":1}");
+		} else if (action.equals("upload_address")){
+			String school=request.getParameter("address_school");
+			String area=request.getParameter("address_area");
+			String building=request.getParameter("address_building");
+			String room=request.getParameter("address_room");
+			
 		} else if (action.equals("timeline"))
 		{
 			out.print(
