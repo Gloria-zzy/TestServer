@@ -1,11 +1,11 @@
 <%@ page language="java" import="com.udchina.nuist.Sms"
 	import="com.udchina.nuist.DBAccess"
+	import="com.udchina.nuist.User"
 	import="com.udchina.nuist.tools.MD5Tool"
 	contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%
 	out.clear();
-
 	String action = request.getParameter("action");
 
 	if (action != null)
@@ -13,7 +13,7 @@
 		if (action.equals("send_pass"))
 		{
 
-			String phone = request.getParameter("phone");
+			String phone = request.getParameter("item_phone");
 			DBAccess dba = new DBAccess();
 
 			try
@@ -32,7 +32,7 @@
 			// if user doesn't exist, first register,  
 			String phone_md5 = request.getParameter("phone_md5");
 			String code_rec = request.getParameter("key_code");
-			String phone = request.getParameter("phone");
+			String phone = request.getParameter("item_phone");
 
 			DBAccess dba = new DBAccess();
 			String code = dba.getCode(phone_md5);
@@ -49,6 +49,7 @@
 				}
 			} else
 			{
+				dba.register(phone);
 				if (code_rec.equals(code))
 				{
 					out.print("{\"status\":1,\"token\":" + phone + "}");
@@ -62,12 +63,6 @@
 		} else if (action.equals("upload_contacts"))
 		{
 			out.print("{\"status\":1}");
-		} else if (action.equals("upload_address")){
-			String school=request.getParameter("address_school");
-			String area=request.getParameter("address_area");
-			String building=request.getParameter("address_building");
-			String room=request.getParameter("address_room");
-			
 		} else if (action.equals("timeline"))
 		{
 			out.print(
@@ -105,17 +100,25 @@
 
 			String username = request.getParameter("username");
 			String password = request.getParameter("password");
-			String phone = request.getParameter("phone");
-			String email = request.getParameter("email");
+			String phone = request.getParameter("item_phone");
+			String email = request.getParameter("item_email");
 			String address = request.getParameter("address");
 
 			DBAccess dba = new DBAccess();
-			if (dba.regist(username, password, phone, email, address))
+			try
 			{
-				// if automatically login after register, token is needed 
-				out.print("{\"status\":1,\"token\":" + phone + "}");
-			} else
+				if (dba.regist(username, password, phone, email,
+						address))
+				{
+					// if automatically login after register, token is needed 
+					out.print("{\"status\":1,\"token\":" + phone + "}");
+				} else
+				{
+					out.print("{\"status\":0,\"token\":\"\"}");
+				}
+			} catch (Exception e)
 			{
+				e.printStackTrace();
 				out.print("{\"status\":0,\"token\":\"\"}");
 			}
 		} else if (action.equals("upload_token"))
@@ -129,7 +132,37 @@
 			{
 				out.print("{\"status\":0}");
 			}
+		} else if (action.equals("upload_address"))
+		{
+			String phone = request.getParameter("item_phone");
+			String school = request.getParameter("address_school");
+			String area = request.getParameter("address_area");
+			String building = request.getParameter("address_building");
+			String room = request.getParameter("address_room");
+			DBAccess dba = new DBAccess();
 
+			try
+			{
+				if (dba.saveAddress(phone, school, area, building, room))
+				{
+					out.print("{\"status\":1}");
+				} else
+				{
+					out.print("{\"status\":0}");
+				}
+			} catch (Exception e)
+			{
+				e.printStackTrace();
+				out.print("{\"status\":0}");
+			}
+			
+		} else if (action.equals("download_address"))
+		{
+			String phone = request.getParameter("item_phone");
+			DBAccess dba = new DBAccess();
+			User user = dba.getAddress(phone);
+			/* out.print("{\"status\":0,\"token\":\"\"}"); */
+			out.print("{\"status\":1,\"address_school\":" + user.getSchool() + ",\"address_area\":" + user.getArea() + ",\"address_building\":" + user.getBuilding() + ",\"address_room\":" + user.getRoom() + "}");
 		}
 	} else
 	{

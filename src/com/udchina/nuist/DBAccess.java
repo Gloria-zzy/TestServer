@@ -10,21 +10,82 @@ public class DBAccess
 {
 	// 连接数据库
 	static final String jdbc_dirver = "com.mysql.jdbc.Driver";
-	static final String db_url = "jdbc:mysql://101.132.190.102:3306/phone_code";
+	static final String db_url = "jdbc:mysql://localhost/phone_code";
 
 	// 数据库帐号
 	static final String user = "root";
 	static final String pass = "charles";
 	
-	public void saveAddress(){
+	public DBAccess()
+	{
+		System.out.println("hello!");
+	}
+	
+	public User getAddress(String phone)
+	{
+		String _phone = "'" + phone + "'";
+
+		String sql = "select school, area, building, room from users_info where phone = " + _phone;
 		
+		ResultSet rs = null;
+		Connection conn = null;
+		Statement stmt = null;
+		
+		try
+		{
+			// register jdbc driver
+			Class.forName(jdbc_dirver);
+			
+			// open a connection
+			conn = DriverManager.getConnection(db_url, user, pass);
+			
+			// execute a query
+			stmt = conn.createStatement();
+			
+			rs = stmt.executeQuery(sql);
+			
+			User user = null;
+			
+			while(rs.next())
+			{
+				String school = rs.getString("school");
+				String area = rs.getString("area");
+				String building = rs.getString("building");
+				String room = rs.getString("room");
+				user = new User(phone, school, area, building, room);
+			}
+			
+			rs.close();
+			stmt.close();
+			conn.close();
+			
+			return user;
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public boolean saveAddress(String phone, String school, String area, String building,
+			String room)
+	{
+		String _phone = "'" + phone + "'";
+		String _school = "'" + school + "'";
+		String _area = "'" + area + "'";
+		String _building = "'" + building + "'";
+		String _room = "'" + room + "'";
+
+		String sql = "update users_info set school = " + _school + ", area = "
+				+ _area + ", building = " + _building + ", room = " + _room + " where phone = " + _phone;
+		
+		return DoSQL_ins(sql);
 	}
 	
 	public boolean userExist(String phone){
-		System.out.println("phone or token: " + phone);
 		String _phone = "'" + phone + "'";
 		ResultSet rs = null;
-		String sql = "select * from regist_info where phone = " + _phone;
+		String sql = "select * from users_info where phone = " + _phone;
 		
 		Connection conn = null;
 		Statement stmt = null;
@@ -34,11 +95,9 @@ public class DBAccess
 			Class.forName(jdbc_dirver);
 			
 			// open a connection
-			System.out.println("Connection to database...");
 			conn = DriverManager.getConnection(db_url, user, pass);
 			
 			// execute a query
-			System.out.println("Creating statement");
 			stmt = conn.createStatement();
 			
 			rs = stmt.executeQuery(sql);
@@ -62,6 +121,15 @@ public class DBAccess
 		
 	}
 
+	// register
+	public boolean register(String phone)
+	{
+		String _phone = "'" + phone + "'";
+		String sql = "insert into users_info values(" + _phone + ",'','','','')";
+		
+		return DoSQL_ins(sql);
+	}
+	
 	// add to regist_info
 	public boolean regist(String username, String password, String phone,
 			String email, String address)
@@ -121,11 +189,9 @@ public class DBAccess
 			Class.forName(jdbc_dirver);
 			
 			// open a connection
-			System.out.println("Connection to database...");
 			conn = DriverManager.getConnection(db_url, user, pass);
 
 			// execute a query
-			System.out.println("Creating statement");
 			stmt = conn.createStatement();
 			
 			rs = stmt.execute(sql);
@@ -156,11 +222,9 @@ public class DBAccess
 			Class.forName(jdbc_dirver);
 
 			// open a connection
-			System.out.println("Connection to database...");
 			conn = DriverManager.getConnection(db_url, user, pass);
 
 			// execute a query
-			System.out.println("Creating statement");
 			stmt = conn.createStatement();
 			ResultSet rs;
 			boolean rs_update;
@@ -236,6 +300,11 @@ public class DBAccess
 		return pc;
 	}
 
+	public void test(String action)
+	{
+		System.out.println("action: " + action);
+	}
+	
 	class PC
 	{
 		private String phone;
@@ -282,4 +351,5 @@ public class DBAccess
 			this.phone = phone;
 		}
 	}
+	
 }

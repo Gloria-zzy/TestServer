@@ -13,6 +13,8 @@ public class Sms
 	
 	public Sms(String phN)
 	{
+		
+		System.out.println("phoneNum: " + phN);
 		phoneNum = phN;
 		try
 		{
@@ -89,9 +91,16 @@ public class Sms
 		request.setOutId("yourOutId");
 
 		// hint 此处可能会抛出异常，注意catch
-		SendSmsResponse sendSmsResponse = acsClient.getAcsResponse(request);
-
-		return sendSmsResponse;
+		try{
+			
+			SendSmsResponse sendSmsResponse = acsClient.getAcsResponse(request);
+			return sendSmsResponse;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	private String GenerateCode()
