@@ -1,6 +1,8 @@
 <%@ page language="java" import="com.udchina.nuist.Sms"
-	import="com.udchina.nuist.DBAccess"
-	import="com.udchina.nuist.User"
+	import="com.udchina.nuist.DBAccess" import="com.udchina.nuist.User"
+	import="com.udchina.nuist.Order" import="java.util.ArrayList"
+	import="com.udchina.nuist.utils.DBConn"
+	import="com.udchina.nuist.bean.Orders"
 	import="com.udchina.nuist.tools.MD5Tool"
 	contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
@@ -10,7 +12,8 @@
 
 	if (action != null)
 	{
-		if (action.equals("send_pass"))
+		
+		if (action.equals("send_pass"))	// send pass to client
 		{
 
 			String phone = request.getParameter("item_phone");
@@ -26,7 +29,7 @@
 				out.print("{\"status\":0}");
 			}
 
-		} else if (action.equals("login"))
+		} else if (action.equals("login"))	// client login model
 		{
 			// if user exist, just judge the code
 			// if user doesn't exist, first register,  
@@ -42,86 +45,24 @@
 				if (code_rec.equals(code))
 				{
 					out.print("{\"status\":1,\"token\":" + phone + "}");
-					//"{\"status\":1,\"token\":\"" + phone + "\"}");
 				} else
 				{
 					out.print("{\"status\":0,\"token\":\"\"}");
 				}
 			} else
 			{
-				dba.register(phone);
+				
 				if (code_rec.equals(code))
 				{
-					out.print("{\"status\":1,\"token\":" + phone + "}");
-					//"{\"status\":1,\"token\":\"" + phone + "\"}");
+					dba.register(phone);
+					out.print("{\"status\":2,\"token\":" + phone + "}");
 				} else
 				{
 					out.print("{\"status\":0,\"token\":\"\"}");
 				}
 			}
 
-		} else if (action.equals("upload_contacts"))
-		{
-			out.print("{\"status\":1}");
-		} else if (action.equals("timeline"))
-		{
-			out.print(
-					"{\"status\":1,\"page\":1,\"perpage\":20,\"timeline\":["
-							+ "{\"msg\":\"Haha1\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"},"
-							+ "{\"msg\":\"Haha2\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"},"
-							+ "{\"msg\":\"Haha3\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"},"
-							+ "{\"msg\":\"Haha4\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"},"
-							+ "{\"msg\":\"Haha5\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"},"
-							+ "{\"msg\":\"Haha6\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"},"
-							+ "{\"msg\":\"Haha7\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"},"
-							+ "{\"msg\":\"Haha8\",\"phone_md5\":\"dasdasdbkas\",\"msgId\":\"1231234\"}"
-							+ "]}");
-		} else if (action.equals("get_comment"))
-		{
-			out.print(
-					"{\"status\":1,\"page\":1,\"perpage\":20,\"msgId\":\"12133\",\"comments\":["
-							+ "{\"content\":\"Hehe1\",\"phone_md5\":\"dasdasdbkas\"},"
-							+ "{\"content\":\"Hehe2\",\"phone_md5\":\"dasdasdbkas\"},"
-							+ "{\"content\":\"Hehe3\",\"phone_md5\":\"dasdasdbkas\"},"
-							+ "{\"content\":\"Hehe4\",\"phone_md5\":\"dasdasdbkas\"},"
-							+ "{\"content\":\"Hehe5\",\"phone_md5\":\"dasdasdbkas\"},"
-							+ "{\"content\":\"Hehe6\",\"phone_md5\":\"dasdasdbkas\"},"
-							+ "{\"content\":\"Hehe7\",\"phone_md5\":\"dasdasdbkas\"},"
-							+ "{\"content\":\"Hehe8\",\"phone_md5\":\"dasdasdbkas\"}"
-							+ "]}");
-		} else if (action.equals("pub_comment"))
-		{
-			out.print("{\"status\":1}");
-		} else if (action.equals("publish"))
-		{
-			out.print("{\"status\":1}");
-		} else if (action.equals("regist"))
-		{
-
-			String username = request.getParameter("username");
-			String password = request.getParameter("password");
-			String phone = request.getParameter("item_phone");
-			String email = request.getParameter("item_email");
-			String address = request.getParameter("address");
-
-			DBAccess dba = new DBAccess();
-			try
-			{
-				if (dba.regist(username, password, phone, email,
-						address))
-				{
-					// if automatically login after register, token is needed 
-					out.print("{\"status\":1,\"token\":" + phone + "}");
-				} else
-				{
-					out.print("{\"status\":0,\"token\":\"\"}");
-				}
-			} catch (Exception e)
-			{
-				e.printStackTrace();
-				out.print("{\"status\":0,\"token\":\"\"}");
-			}
-		} else if (action.equals("upload_token"))
+		} else if (action.equals("upload_token"))	// client upload token, Server judge whether it's valid
 		{
 			String token = request.getParameter("token");
 			DBAccess dba = new DBAccess();
@@ -132,37 +73,177 @@
 			{
 				out.print("{\"status\":0}");
 			}
-		} else if (action.equals("upload_address"))
+		} else if (action.equals("upload_address"))	// client upload address, Server save it to table users_info
 		{
-			String phone = request.getParameter("item_phone");
-			String school = request.getParameter("address_school");
-			String area = request.getParameter("address_area");
-			String building = request.getParameter("address_building");
-			String room = request.getParameter("address_room");
+			String phone = new String(request.getParameter("item_phone")
+					.getBytes("iso-8859-1"), "utf-8");
+			String school = new String(
+					request.getParameter("address_school")
+							.getBytes("iso-8859-1"),
+					"utf-8");
+			String area = new String(
+					request.getParameter("address_area")
+							.getBytes("iso-8859-1"),
+					"utf-8");
+			String building = new String(
+					request.getParameter("address_building")
+							.getBytes("iso-8859-1"),
+					"utf-8");
+			String room = new String(
+					request.getParameter("address_room")
+							.getBytes("iso-8859-1"),
+					"utf-8");
+
 			DBAccess dba = new DBAccess();
 
+			dba.test(school);
+			dba.test(school);
 			try
 			{
-				if (dba.saveAddress(phone, school, area, building, room))
+				if (dba.saveAddress(phone, school, area, building,
+						room))
 				{
-					out.print("{\"status\":1}");
+					out.print("{\"status\":1,\"message\":" + school
+							+ "}");
 				} else
 				{
 					out.print("{\"status\":0}");
+					out.print(
+							"{\"status\":0,\"token\":\"failed to save\"}");
 				}
 			} catch (Exception e)
 			{
 				e.printStackTrace();
 				out.print("{\"status\":0}");
+				out.print("{\"status\":0}");
 			}
-			
-		} else if (action.equals("download_address"))
+
+		} else if (action.equals("download_address"))	// sendback the address that match the phone number sent by client
 		{
 			String phone = request.getParameter("item_phone");
 			DBAccess dba = new DBAccess();
 			User user = dba.getAddress(phone);
-			/* out.print("{\"status\":0,\"token\":\"\"}"); */
-			out.print("{\"status\":1,\"address_school\":" + user.getSchool() + ",\"address_area\":" + user.getArea() + ",\"address_building\":" + user.getBuilding() + ",\"address_room\":" + user.getRoom() + "}");
+			out.print("{\"status\":1,\"address_school\":"
+					+ user.getSchool() + ",\"address_area\":"
+					+ user.getArea() + ",\"address_building\":"
+					+ user.getBuilding() + ",\"address_room\":"
+					+ user.getRoom() + "}");
+		} else if (action.equals("upload_order"))	// client upload order, Server save it to table 
+		//!!!!!!!!!!!!!!!!!there is a problem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		{
+			String phone = new String(request.getParameter("item_phone")
+					.getBytes("iso-8859-1"), "utf-8");
+			String location = new String(
+					request.getParameter("order_location")
+							.getBytes("iso-8859-1"),
+					"utf-8");
+			String time = new String(request.getParameter("order_point")
+					.getBytes("iso-8859-1"), "utf-8");
+			String note = new String(request.getParameter("order_note")
+					.getBytes("iso-8859-1"), "utf-8");
+			String date = new String(request.getParameter("order_date")
+					.getBytes("iso-8859-1"), "utf-8");
+			String takenum = new String(request.getParameter("order_takenum")
+					.getBytes("iso-8859-1"), "utf-8");
+			
+			DBAccess dba = new DBAccess();
+
+			if (location.equals("默认地址"))
+			{
+				User user = dba.getAddress(phone);
+				location = user.getArea() + user.getBuilding()
+						+ user.getRoom();
+			}
+
+			try
+			{
+				String orderNum = dba.newOrder(phone, location, time,
+						note, date, takenum);
+				/* out.print("{\"status\":1}"); */
+				out.print("{\"status\":1,\"orderNum\":"+ orderNum +"}");
+				
+			} catch (Exception e)
+			{
+				out.print("{\"status\":0}");
+				e.printStackTrace();
+			}
+		} else if (action.equals("download_orders"))	// sendback the orders match the phone number sent by client 
+		{
+			String phone = new String(request.getParameter("item_phone")
+					.getBytes("iso-8859-1"), "utf-8");
+
+			DBAccess dba = new DBAccess();
+			DBConn dbc = new DBConn();
+			
+			try
+			{
+				ArrayList<Orders> orderList = dbc.getOrders(phone);
+
+				String resultSet = "{\"status\":1,\"orders\":[ ";
+				for (Orders o : orderList)
+				{
+					resultSet += "{\"order_number\":" + o.getOrderNum()
+							+ ",\"item_phone\":" + o.getPhone()
+							+ ",\"order_point\":" + o.getTime()
+							+ ",\"order_location\":" + o.getLocation()
+							+ ",\"order_note\":" + o.getNote()
+							+ ",\"order_date\":" + o.getDate()
+							+ ",\"order_status\":" + o.getStatus()
+							+ ",\"order_takenum\":" + o.getTakenum()
+							+ "},";
+				}
+				resultSet = resultSet.substring(0,
+						resultSet.length() - 1);
+				resultSet += "]}";
+
+				out.print(resultSet);
+
+			} catch (Exception e)
+			{
+				out.print("{\"status\":0}");
+				e.printStackTrace();
+			}
+		} else if (action.equals("complete_order")) 
+		{
+			String orderNum = request.getParameter("order_number");
+			
+			DBConn dbc = new DBConn();
+			
+			dbc.completeOrder(orderNum);
+			
+			out.print("{\"status\":1}");
+		} else if (action.equals("download_waiting_orders"))
+		{
+			DBConn dbc = new DBConn();
+			
+			try
+			{
+				ArrayList<Orders> orderList = dbc.getWaitingOrders();
+
+				String resultSet = "{\"status\":1,\"orders\":[ ";
+				for (Orders o : orderList)
+				{
+					resultSet += "{\"order_number\":" + o.getOrderNum()
+							+ ",\"item_phone\":" + o.getPhone()
+							+ ",\"order_point\":" + o.getTime()
+							+ ",\"order_location\":" + o.getLocation()
+							+ ",\"order_note\":" + o.getNote()
+							+ ",\"order_date\":" + o.getDate()
+							+ ",\"order_status\":" + o.getStatus()
+							+ ",\"order_takenum\":" + o.getTakenum()
+							+ "},";
+				}
+				resultSet = resultSet.substring(0,
+						resultSet.length() - 1);
+				resultSet += "]}";
+
+				out.print(resultSet);
+
+			} catch (Exception e)
+			{
+				out.print("{\"status\":0}");
+				e.printStackTrace();
+			}
 		}
 	} else
 	{

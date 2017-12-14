@@ -1,7 +1,5 @@
-package com.udchina.nuist;
+package com.udchina.nuist.utils;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -9,8 +7,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.List;
 
-public class DBAccess
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
+
+import com.udchina.nuist.bean.Orders;
+import com.udchina.nuist.bean.UsersInfo;
+
+public class DBConn
 {
 	// 连接数据库
 	static final String jdbc_dirver = "com.mysql.jdbc.Driver";
@@ -20,47 +28,73 @@ public class DBAccess
 	static final String user = "root";
 	static final String pass = "charles";
 
-	public ArrayList<Order> getOrders(String phone)
+	Configuration config;
+	SessionFactory sessionFactory;
+	Session session;
+	private Query query;
+
+	public DBConn()
 	{
-		ArrayList<Order> orderList = new ArrayList<Order>();
-		ResultSet rs = null;
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-
-		try
-		{
-			Class.forName(jdbc_dirver);
-			conn = DriverManager.getConnection(db_url, user, pass);
-
-			String sql = "select * from orders where phone=?";
-			System.out.println(phone);
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setString(1, phone);
-
-			rs = pstmt.executeQuery();
-			while (rs.next())
-			{
-				orderList.add(new Order(rs.getString("orderNum"),
-						rs.getString("phone"), rs.getString("time"),
-						rs.getString("location"), rs.getString("note"),
-						rs.getInt("status")));
-				System.out.println(rs.getString("orderNum"));
-			}
-
-			rs.close();
-			conn.close();
-			pstmt.close();
-			return orderList;
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-			return null;
-		}
+		config = new Configuration().configure();
+		sessionFactory = config.buildSessionFactory();
 	}
 
-	public DBAccess()
+	private Session getSession()
 	{
-		System.out.println("hello!");
+		Session session = sessionFactory.openSession();
+		return session;
+	}
+	
+	public ArrayList<Orders> getWaitingOrders()
+	{
+		ArrayList<Orders> orderList = new ArrayList<Orders>();
+		session = getSession();
+		Transaction ts = session.beginTransaction();
+		setQuery(session.createQuery("from Orders where status=2"));
+
+		@SuppressWarnings("unchecked")
+		List<Orders> list = getQuery().list();
+		orderList = (ArrayList<Orders>) list;
+
+		ts.commit();
+		session.close();
+		
+		for (Orders o : orderList)
+		{
+			System.out.println(o.getDate());
+		}
+
+		return orderList;
+	}
+	
+	public boolean updateOrder(String phone, String location, String time,
+			String note, String date, String takeNum)
+	{
+		
+		return false;
+	}
+
+	public ArrayList<Orders> getOrders(String phone)
+	{
+		ArrayList<Orders> orderList = new ArrayList<Orders>();
+		session = getSession();
+		Transaction ts = session.beginTransaction();
+		setQuery(session.createQuery("from Orders where phone=:phoneNum"));
+		getQuery().setParameter("phoneNum", phone);
+
+		@SuppressWarnings("unchecked")
+		List<Orders> list = getQuery().list();
+		orderList = (ArrayList<Orders>) list;
+
+		ts.commit();
+		session.close();
+		
+		for (Orders o : orderList)
+		{
+			System.out.println(o.getDate());
+		}
+
+		return orderList;
 	}
 
 	// create order number
@@ -73,9 +107,23 @@ public class DBAccess
 		return orderNum;
 	}
 
+	public boolean completeOrder(String orderNum)
+	{
+		session = getSession();
+		Transaction ts = session.beginTransaction();
+		setQuery(session.createQuery(
+				"update Orders set status = 0 where orderNum=:orderNum"));
+		getQuery().setParameter("orderNum", orderNum);
+		getQuery().executeUpdate();
+		ts.commit();
+		session.close();
+
+		return true;
+	}
+
 	// return order number
 	public String newOrder(String phone, String location, String time,
-			String note, String date, String takeNum)
+			String note)
 	{
 		ResultSet rs = null;
 		Connection conn = null;
@@ -102,26 +150,14 @@ public class DBAccess
 
 			rs.close();
 
-			String _phone = "'" + phone + "'";
-			String _orderNum = "'" + orderNum + "'";
-			String _time = "'" + time + "'";
-			String _location = "'" + location + "'";
-			String _note = "'" + note + "'";
-			String _date = "'" + date + "'";
-			String _takeNum = "'" + takeNum + "'";
-
-			// init an order and set its ordernum and status
-			// default status=2 means nobody answered yet
-			sql = "insert into orders values(" + _orderNum + ", " + _phone
-					+ ",'','','',2,'','')";
+			sql = "insert into orders values(?, ?, ?, ?, ?, 1)";
 			pstmt = conn.prepareStatement(sql);
-			pstmt.execute();
+			pstmt.setString(1, orderNum);
+			pstmt.setString(2, phone);
+			pstmt.setString(3, time);
+			pstmt.setString(4, location);
+			pstmt.setString(5, note);
 
-			sql = "update orders set time = " + _time + ", location = "
-					+ _location + ", note = " + _note + ", date = " + _date
-					+ ", takenum = " + _takeNum + " where orderNum = "
-					+ _orderNum;
-			pstmt = conn.prepareStatement(sql);
 			pstmt.execute();
 
 			rs.close();
@@ -130,15 +166,12 @@ public class DBAccess
 			return orderNum;
 		} catch (Exception e)
 		{
-			StringWriter sw = new StringWriter();
-			PrintWriter pw = new PrintWriter(sw);
-			e.printStackTrace(pw);
-			String msg = sw.toString();
-			return msg;
+			e.printStackTrace();
+			return "";
 		}
 	}
 
-	public User getAddress(String phone)
+	public UsersInfo getAddress(String phone)
 	{
 		String _phone = "'" + phone + "'";
 
@@ -157,7 +190,7 @@ public class DBAccess
 
 			rs = stmt.executeQuery(sql);
 
-			User user = null;
+			UsersInfo user = null;
 
 			while (rs.next())
 			{
@@ -165,7 +198,7 @@ public class DBAccess
 				String area = rs.getString("area");
 				String building = rs.getString("building");
 				String room = rs.getString("room");
-				user = new User(phone, school, area, building, room);
+				user = new UsersInfo(phone, school, area, building, room);
 			}
 
 			rs.close();
@@ -423,6 +456,16 @@ public class DBAccess
 	public void test(String action)
 	{
 		System.out.println(": " + action);
+	}
+
+	public Query getQuery()
+	{
+		return query;
+	}
+
+	public void setQuery(Query query)
+	{
+		this.query = query;
 	}
 
 	class PC
